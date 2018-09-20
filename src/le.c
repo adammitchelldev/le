@@ -18,7 +18,7 @@
 /*** defines ***/
 
 #define CTRL_KEY(k) ((k) & 0x1f)
-#define KILO_VERSION "0.0.1"
+#define LE_VERSION "0.0.1"
 
 enum editorKey {
   ARROW_LEFT = 1000,
@@ -220,6 +220,16 @@ void abFree(struct abuf *ab) {
 
 /*** output ***/
 
+void editorScroll() {
+  if (E.cy < E.rowoff) {
+    E.rowoff = E.cy;
+  }
+  if (E.cy >= E.rowoff + E.screenrows - 2) {
+    E.rowoff = E.cy - E.screenrows + 2;
+  }
+}
+
+
 void editorDrawRows(struct abuf *ab) {
   int y = 1; // current row (starts at 1)
 
@@ -246,7 +256,7 @@ void editorDrawRows(struct abuf *ab) {
   // Footer
   char welcome[80];
   int welcomelen = snprintf(welcome, sizeof(welcome),
-    "\x1b[7mKilo editor -- version %s\x1b[K\x1b[m", KILO_VERSION);
+    "\x1b[7mle %s\x1b[K\x1b[m", LE_VERSION);
   if (welcomelen > E.screencols) welcomelen = E.screencols;
   abAppend(ab, welcome, welcomelen);
 }
@@ -261,7 +271,7 @@ void editorRefreshScreen() {
   editorDrawRows(&ab);
 
   char buf[32];
-  snprintf(buf, sizeof(buf), "\x1b[%d;%dH", E.cy + 1, E.cx + 1);
+  snprintf(buf, sizeof(buf), "\x1b[%d;%dH", E.cy - E.rowoff + 1, E.cx + 1);
   abAppend(&ab, buf, strlen(buf));
 
   abAppend(&ab, "\x1b[?25h", 6); // Show cursor
@@ -288,19 +298,11 @@ void editorMoveCursor(int key) {
     case ARROW_UP:
       if (E.cy != 0) {
         E.cy--;
-      } else {
-        if (E.rowoff != 0) {
-          E.rowoff--;
-        }
       }
       break;
     case ARROW_DOWN:
-      if (E.cy != E.screenrows - 1) {
+      if (E.cy < INT_MAX) {
         E.cy++;
-      } else {
-        if (E.rowoff < INT_MAX) {
-          E.rowoff++;
-        }
       }
       break;
   }
@@ -327,9 +329,10 @@ void editorProcessKeypress() {
     case PAGE_UP:
     case PAGE_DOWN:
       {
-        int times = E.screenrows;
+        int times = E.screenrows - 1;
         while (times--)
           editorMoveCursor(c == PAGE_UP ? ARROW_UP : ARROW_DOWN);
+        editorScroll();
       }
       break;
 
@@ -338,6 +341,7 @@ void editorProcessKeypress() {
     case ARROW_UP:
     case ARROW_DOWN:
       editorMoveCursor(c);
+      editorScroll();
       break;
   }
 }
