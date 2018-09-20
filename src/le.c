@@ -301,7 +301,7 @@ void editorMoveCursor(int key) {
       }
       break;
     case ARROW_DOWN:
-      if (E.cy < INT_MAX) {
+      if (E.cy < E.numrows) {
         E.cy++;
       }
       break;
