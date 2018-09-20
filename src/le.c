@@ -6,6 +6,7 @@
 
 #include <ctype.h>
 #include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,6 +41,7 @@ typedef struct erow {
 
 struct editorConfig {
   int cx, cy;
+  int rowoff;
   int screenrows;
   int screencols;
   int numrows;
@@ -219,20 +221,29 @@ void abFree(struct abuf *ab) {
 /*** output ***/
 
 void editorDrawRows(struct abuf *ab) {
-  int y;
-  struct erow *row = E.row;
-  for (y = 0; y < E.numrows; ++y, ++row) {
+  int y = 1; // current row (starts at 1)
+
+  // Pointer to first row after offset
+  struct erow *row = E.row + E.rowoff;
+
+  // Calculate row to stop printing at
+  int maxrows = 1 + E.numrows - E.rowoff;
+  maxrows = maxrows < E.screenrows ? maxrows : E.screenrows;
+
+  // Print
+  for (; y < maxrows; ++y, ++row) {
     int len = row->size;
     if (len > E.screencols) len = E.screencols;
     abAppend(ab, row->chars, len);
     abAppend(ab, "\x1b[K\r\n", 5);
   }
-  ++y; // want to draw one less than screenrows
+
+  // For any extra rows print a ~
   for (; y < E.screenrows; ++y) {
     abAppend(ab, "~\x1b[K\r\n", 6); // tilde clearline carriagereturn linefeed
   }
 
-  // Footer bar
+  // Footer
   char welcome[80];
   int welcomelen = snprintf(welcome, sizeof(welcome),
     "\x1b[7mKilo editor -- version %s\x1b[K\x1b[m", KILO_VERSION);
@@ -277,11 +288,19 @@ void editorMoveCursor(int key) {
     case ARROW_UP:
       if (E.cy != 0) {
         E.cy--;
+      } else {
+        if (E.rowoff != 0) {
+          E.rowoff--;
+        }
       }
       break;
     case ARROW_DOWN:
       if (E.cy != E.screenrows - 1) {
         E.cy++;
+      } else {
+        if (E.rowoff < INT_MAX) {
+          E.rowoff++;
+        }
       }
       break;
   }
