@@ -30,7 +30,6 @@
 
 #define CTRL_KEY(k) ((k) & 0x1f)
 
-
 enum editorKey {
   BACKSPACE = 127,
   ARROW_LEFT = 1000,
@@ -79,6 +78,8 @@ void editorSetStatusMessage(const char *fmt, ...);
 void editorRefreshScreen();
 void editorScroll();
 char *editorPrompt(char *prompt, void (*callback)(char *, int));
+
+int luaEventKeypress(int c);
 
 /*** terminal ***/
 
@@ -725,6 +726,12 @@ void editorProcessKeypress() {
 
   int c = editorReadKey();
 
+  if(luaEventKeypress(c)) {
+    editorScroll();
+    quit_times = LE_QUIT_TIMES;
+    return;
+  }
+
   switch (c) {
     case '\r':
       editorInsertNewline();
@@ -814,6 +821,25 @@ void editorProcessKeypress() {
 }
 
 /*** lua ***/
+
+int luaEventKeypress(int c) {
+  lua_getglobal(L, "key");
+  lua_pushinteger(L, c);
+
+  if (lua_pcall(L, 1, 1, 0) != 0) {
+    fprintf(stderr, "%s\n", lua_tostring(L, -1)); // tell us what mistake we made
+    return 0;
+  }
+
+  if (!lua_isnumber(L, -1)) {
+    fprintf(stderr, "%s\n", lua_tostring(L, -1)); // tell us what mistake we made
+    return 0;
+  }
+
+  int ret = lua_tointeger(L, -1);
+  lua_pop(L, 1);
+  return ret;
+}
 
 int extSetStatusMessage(lua_State *L) {
   const char *message = luaL_checkstring(L, 1);
