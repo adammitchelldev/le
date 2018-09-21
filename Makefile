@@ -24,7 +24,7 @@ OFLAGS = -L/usr/local/lib -llua -lm -ldl
 TARGET = le
 
 #Object list (corresponds to source files)
-OBJECTS = le.o
+OBJECTS = main.o terminal.o
 
 SRCDIR = src
 INCDIR = inc

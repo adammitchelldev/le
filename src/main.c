@@ -22,57 +22,19 @@
 #include <lualib.h>
 #include <lauxlib.h>
 
-/*** defines ***/
+#include <global.h>
 
-#define LE_VERSION "0.0.1"
-#define LE_TAB_STOP 2
-#define LE_QUIT_TIMES 3
+#include <terminal.h>
 
-#define CTRL_KEY(k) ((k) & 0x1f)
-
-enum editorKey {
-  BACKSPACE = 127,
-  ARROW_LEFT = 1000,
-  ARROW_RIGHT,
-  ARROW_UP,
-  ARROW_DOWN,
-  DEL_KEY,
-  HOME_KEY,
-  END_KEY,
-  PAGE_UP,
-  PAGE_DOWN
-};
-
-/*** data ***/
-
-typedef struct erow {
-  int size;
-  int rsize;
-  char *chars;
-  char *render;
-} erow;
-
-struct editorConfig {
-  int cx, cy;
-  int rx;
-  int rowoff;
-  int coloff;
-  int screenrows;
-  int screencols;
-  int numrows;
-  erow *row;
-  int dirty;
-  char *filename;
-  char statusmsg[80];
-  time_t statusmsg_time;
-  struct termios orig_termios;
-};
-
-lua_State *L;
-
-struct editorConfig E;
-
-/*** prototypes ***/
+/***
+########  ########   #######  ########  #######  ######## ##    ## ########  ########  ######
+##     ## ##     ## ##     ##    ##    ##     ##    ##     ##  ##  ##     ## ##       ##    ##
+##     ## ##     ## ##     ##    ##    ##     ##    ##      ####   ##     ## ##       ##
+########  ########  ##     ##    ##    ##     ##    ##       ##    ########  ######    ######
+##        ##   ##   ##     ##    ##    ##     ##    ##       ##    ##        ##             ##
+##        ##    ##  ##     ##    ##    ##     ##    ##       ##    ##        ##       ##    ##
+##        ##     ##  #######     ##     #######     ##       ##    ##        ########  ######
+ ***/
 
 void editorSetStatusMessage(const char *fmt, ...);
 void editorRefreshScreen();
@@ -81,123 +43,27 @@ char *editorPrompt(char *prompt, void (*callback)(char *, int, int, void *), voi
 
 int luaEventKeypress(int c);
 
-/*** terminal ***/
+/***
+######## ######## ########  ##     ## #### ##    ##    ###    ##
+   ##    ##       ##     ## ###   ###  ##  ###   ##   ## ##   ##
+   ##    ##       ##     ## #### ####  ##  ####  ##  ##   ##  ##
+   ##    ######   ########  ## ### ##  ##  ## ## ## ##     ## ##
+   ##    ##       ##   ##   ##     ##  ##  ##  #### ######### ##
+   ##    ##       ##    ##  ##     ##  ##  ##   ### ##     ## ##
+   ##    ######## ##     ## ##     ## #### ##    ## ##     ## ########
+ ***/
 
-void die(const char *s) {
-  write(STDOUT_FILENO, "\x1b[2J", 4);
-  write(STDOUT_FILENO, "\x1b[H", 3);
 
-  lua_close(L);
 
-  perror(s);
-  exit(1);
-}
-
-void disableRawMode() {
-  if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &E.orig_termios) == -1)
-    die("tcsetattr");
-}
-
-void enableRawMode() {
-  if (tcgetattr(STDIN_FILENO, &E.orig_termios) == -1)
-    die("tcsetattr");
-  atexit(disableRawMode);
-
-  struct termios raw = E.orig_termios;
-  raw.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
-  raw.c_oflag &= ~(OPOST);
-  raw.c_cflag |= (CS8);
-  raw.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
-  raw.c_cc[VMIN] = 0;
-  raw.c_cc[VTIME] = 1;
-
-  if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw) == -1)
-    die("tcsetattr");
-}
-
-int editorReadKey() {
-  int nread;
-  char c;
-  while ((nread = read(STDIN_FILENO, &c, 1)) != 1) {
-    if (nread == -1 && errno != EAGAIN) die("read");
-  }
-
-  if (c == '\x1b') {
-    char seq[3];
-
-    if (read(STDIN_FILENO, &seq[0], 1) != 1) return '\x1b';
-    if (read(STDIN_FILENO, &seq[1], 1) != 1) return '\x1b';
-
-    if (seq[0] == '[') {
-      if (seq[1] >= '0' && seq[1] <= '9') {
-        if (read(STDIN_FILENO, &seq[2], 1) != 1) return '\x1b';
-        if (seq[2] == '~') {
-          switch (seq[1]) {
-            case '1': return HOME_KEY;
-            case '3': return DEL_KEY;
-            case '4': return END_KEY;
-            case '5': return PAGE_UP;
-            case '6': return PAGE_DOWN;
-            case '7': return HOME_KEY;
-            case '8': return END_KEY;
-          }
-        }
-      } else {
-        switch (seq[1]) {
-          case 'A': return ARROW_UP;
-          case 'B': return ARROW_DOWN;
-          case 'C': return ARROW_RIGHT;
-          case 'D': return ARROW_LEFT;
-          case 'H': return HOME_KEY;
-          case 'F': return END_KEY;
-        }
-      }
-    } else if (seq[0] == 'O') {
-      switch (seq[1]) {
-        case 'H': return HOME_KEY;
-        case 'F': return END_KEY;
-      }
-    }
-
-    return '\x1b';
-  } else {
-    return c;
-  }
-}
-
-int getCursorPosition(int *rows, int *cols) {
-  char buf[32];
-  unsigned int i = 0;
-
-  if (write(STDOUT_FILENO, "\x1b[6n", 4) != 4) return -1;
-
-  while (i < sizeof(buf) - 1) {
-    if (read(STDIN_FILENO, &buf[i], 1) != 1) break;
-    if (buf[i] == 'R') break;
-    i++;
-  }
-  buf[i] = '\0';
-
-  if (buf[0] != '\x1b' || buf[1] != '[') return -1;
-  if (sscanf(&buf[2], "%d;%d", rows, cols) != 2) return -1;
-
-  return 0;
-}
-
-int getWindowSize(int *rows, int *cols) {
-  struct winsize ws;
-
-  if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
-    if (write(STDOUT_FILENO, "\x1b[999C\x1b[999B", 12) != 12) return -1;
-    return getCursorPosition(rows, cols);
-  } else {
-    *cols = ws.ws_col;
-    *rows = ws.ws_row;
-    return 0;
-  }
-}
-
-/*** row operations ***/
+/***
+########   #######  ##      ##     #######  ########   ######
+##     ## ##     ## ##  ##  ##    ##     ## ##     ## ##    ##
+##     ## ##     ## ##  ##  ##    ##     ## ##     ## ##
+########  ##     ## ##  ##  ##    ##     ## ########   ######
+##   ##   ##     ## ##  ##  ##    ##     ## ##              ##
+##    ##  ##     ## ##  ##  ##    ##     ## ##        ##    ##
+##     ##  #######   ###  ###      #######  ##         ######
+ ***/
 
 int editorRowCxToRx(erow *row, int cx) {
   int rx = 0;
@@ -322,7 +188,15 @@ void editorRowDelChar(erow *row, int at) {
 
 
 
-/*** editor operations ***/
+/***
+######## ########  #### ########     #######  ########   ######
+##       ##     ##  ##     ##       ##     ## ##     ## ##    ##
+##       ##     ##  ##     ##       ##     ## ##     ## ##
+######   ##     ##  ##     ##       ##     ## ########   ######
+##       ##     ##  ##     ##       ##     ## ##              ##
+##       ##     ##  ##     ##       ##     ## ##        ##    ##
+######## ########  ####    ##        #######  ##         ######
+ ***/
 
 void editorInsertChar(int c) {
   if (E.cy == E.numrows) {
@@ -363,7 +237,15 @@ void editorDelChar() {
   }
 }
 
-/*** file i/o ***/
+/***
+######## #### ##       ########    ####       ##  #######
+##        ##  ##       ##           ##       ##  ##     ##
+##        ##  ##       ##           ##      ##   ##     ##
+######    ##  ##       ######       ##     ##    ##     ##
+##        ##  ##       ##           ##    ##     ##     ##
+##        ##  ##       ##           ##   ##      ##     ##
+##       #### ######## ########    #### ##        #######
+ ***/
 
 char *editorRowsToString(int *buflen) {
   int totlen = 0;
@@ -435,7 +317,15 @@ void editorSave() {
   editorSetStatusMessage("Can't save! I/O error: %s", strerror(errno));
 }
 
-/*** find ***/
+/***
+######## #### ##    ## ########
+##        ##  ###   ## ##     ##
+##        ##  ####  ## ##     ##
+######    ##  ## ## ## ##     ##
+##        ##  ##  #### ##     ##
+##        ##  ##   ### ##     ##
+##       #### ##    ## ########
+ ***/
 
 struct findCallbackState {
   int last_match;
@@ -494,6 +384,23 @@ void editorFindCallback(char *query, int querylen, int key, void *state_param) {
       break;
     }
   }
+
+  // int current = state->last_match;
+  // if(state->direction == 1) {
+  //   erow *row = &E.row[current];
+  //   char *match = strstr(row->chars, query);
+  //   if (match) {
+  //     state->last_match = current;
+  //     E.cy = current;
+  //     E.cx = match - row->chars;
+  //     state->last_match_start_x = E.cx;
+  //     state->last_match_end_x = E.cx + strlen(query);
+  //     E.rowoff = E.numrows;
+  //     editorScroll();
+  //     return;
+  //   }
+  // }
+
 }
 
 void editorFind() {
@@ -527,7 +434,15 @@ void editorFind() {
   }
 }
 
-/*** append buffer ***/
+/***
+   ###    ########  ########  ######## ##    ## ########
+  ## ##   ##     ## ##     ## ##       ###   ## ##     ##
+ ##   ##  ##     ## ##     ## ##       ####  ## ##     ##
+##     ## ########  ########  ######   ## ## ## ##     ##
+######### ##        ##        ##       ##  #### ##     ##
+##     ## ##        ##        ##       ##   ### ##     ##
+##     ## ##        ##        ######## ##    ## ########
+ ***/
 
 struct abuf {
   char *b;
@@ -547,7 +462,15 @@ void abFree(struct abuf *ab) {
   free(ab->b);
 }
 
-/*** output ***/
+/***
+ #######  ##     ## ######## ########  ##     ## ########
+##     ## ##     ##    ##    ##     ## ##     ##    ##
+##     ## ##     ##    ##    ##     ## ##     ##    ##
+##     ## ##     ##    ##    ########  ##     ##    ##
+##     ## ##     ##    ##    ##        ##     ##    ##
+##     ## ##     ##    ##    ##        ##     ##    ##
+ #######   #######     ##    ##         #######     ##
+ ***/
 
 // FIXME why the hell is this in scroll and not movecursor?
 void editorScroll() {
@@ -662,7 +585,15 @@ void editorSetStatusMessage(const char *fmt, ...) {
   E.statusmsg_time = time(NULL);
 }
 
-/*** input ***/
+/***
+#### ##    ## ########  ##     ## ########
+ ##  ###   ## ##     ## ##     ##    ##
+ ##  ####  ## ##     ## ##     ##    ##
+ ##  ## ## ## ########  ##     ##    ##
+ ##  ##  #### ##        ##     ##    ##
+ ##  ##   ### ##        ##     ##    ##
+#### ##    ## ##         #######     ##
+ ***/
 
 char *editorPrompt(char *prompt, void (*callback)(char *, int, int, void *), void *state) {
   size_t bufsize = 128;
@@ -852,7 +783,15 @@ void editorProcessKeypress() {
   quit_times = LE_QUIT_TIMES;
 }
 
-/*** lua ***/
+/***
+##       ##     ##    ###
+##       ##     ##   ## ##
+##       ##     ##  ##   ##
+##       ##     ## ##     ##
+##       ##     ## #########
+##       ##     ## ##     ##
+########  #######  ##     ##
+ ***/
 
 int luaEventKeypress(int c) {
   lua_getglobal(L, "key");
@@ -915,7 +854,15 @@ int luaExecuteScript(const char *filename) {
   return 0;
 }
 
-/*** init ***/
+/***
+#### ##    ## #### ########
+ ##  ###   ##  ##     ##
+ ##  ####  ##  ##     ##
+ ##  ## ## ##  ##     ##
+ ##  ##  ####  ##     ##
+ ##  ##   ###  ##     ##
+#### ##    ## ####    ##
+ ***/
 
 void initEditor() {
   E.cx = 0;
