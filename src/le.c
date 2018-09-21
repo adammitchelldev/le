@@ -77,7 +77,7 @@ struct editorConfig E;
 void editorSetStatusMessage(const char *fmt, ...);
 void editorRefreshScreen();
 void editorScroll();
-char *editorPrompt(char *prompt, void (*callback)(char *, int));
+char *editorPrompt(char *prompt, void (*callback)(char *, int, int, void *), void *state);
 
 int luaEventKeypress(int c);
 
@@ -407,7 +407,7 @@ void editorOpen(char *filename) {
 // TODO save with proper append buffer
 void editorSave() {
   if (E.filename == NULL) {
-    E.filename = editorPrompt("Save as: %s (ESC to cancel)", NULL);
+    E.filename = editorPrompt("Save as: %s (ESC to cancel)", NULL, NULL);
     if (E.filename == NULL) {
       editorSetStatusMessage("Save aborted");
       return;
@@ -437,37 +437,58 @@ void editorSave() {
 
 /*** find ***/
 
-// TODO find next searches after last character of previous match, not line
-void editorFindCallback(char *query, int key) {
-  static int last_match = -1;
-  static int direction = 1;
+struct findCallbackState {
+  int last_match;
+  int last_match_x;
+  int direction;
+};
+
+// FIXME search backwards still searches forwards on the line
+// TODO remember first result for each char in the buffer, proper incremental
+void editorFindCallback(char *query, int querylen, int key, void *state_param) {
+  struct findCallbackState *state = (struct findCallbackState *) state_param;
 
   if (key == '\r' || key == '\x1b') {
-    last_match = -1;
-    direction = 1;
+    state->last_match = -1;
+    state->direction = 1;
     return;
   } else if (key == ARROW_RIGHT || key == ARROW_DOWN) {
-    direction = 1;
+    state->direction = 1;
   } else if (key == ARROW_LEFT || key == ARROW_UP) {
-    direction = -1;
+    state->direction = -1;
   } else {
-    last_match = -1;
-    direction = 1;
+    state->last_match = -1;
+    state->direction = 1;
   }
 
-  if (last_match == -1) direction = 1;
-  int current = last_match;
+  int current = state->last_match;
+  if (state->last_match == -1) {
+    state->direction = 1;
+  } else { // TODO don't duplicate this code (but make it fast!)
+    erow *row = &E.row[current];
+    char *match = strstr(row->render + state->last_match_x + 1, query);
+    if (match) {
+      state->last_match = current;
+      E.cy = current;
+      E.cx = editorRowRxToCx(row, match - row->render) + querylen; // go to end of match
+      state->last_match_x = E.cx;
+      E.rowoff = E.numrows;
+      editorScroll();
+      return; // eek!
+    }
+  }
   int i;
   for (i = 0; i < E.numrows; i++) {
-    current += direction;
+    current += state->direction;
     if (current == -1) current = E.numrows - 1;
     else if (current == E.numrows) current = 0;
     erow *row = &E.row[current];
     char *match = strstr(row->render, query);
     if (match) {
-      last_match = current;
+      state->last_match = current;
       E.cy = current;
-      E.cx = editorRowRxToCx(row, match - row->render);
+      E.cx = editorRowRxToCx(row, match - row->render) + querylen; // go to end of match
+      state->last_match_x = E.cx;
       E.rowoff = E.numrows;
       editorScroll();
       break;
@@ -482,8 +503,19 @@ void editorFind() {
   int saved_coloff = E.coloff;
   int saved_rowoff = E.rowoff;
 
+  struct findCallbackState *state = malloc(sizeof(struct findCallbackState));
+
+  state->last_match = -1;
+  state->last_match_x = -1;
+  state->direction = 1;
+
   char *query = editorPrompt("Search: %s (Use ESC/Arrows/Enter)",
-                             editorFindCallback);
+                             editorFindCallback, state);
+
+  if (state) {
+    free(state);
+  }
+
   if (query) {
     free(query);
   } else {
@@ -632,7 +664,7 @@ void editorSetStatusMessage(const char *fmt, ...) {
 
 /*** input ***/
 
-char *editorPrompt(char *prompt, void (*callback)(char *, int)) {
+char *editorPrompt(char *prompt, void (*callback)(char *, int, int, void *), void *state) {
   size_t bufsize = 128;
   char *buf = malloc(bufsize);
   size_t buflen = 0;
@@ -647,7 +679,7 @@ char *editorPrompt(char *prompt, void (*callback)(char *, int)) {
       case '\x1b':
       case CTRL_KEY('q'):
         editorSetStatusMessage("");
-        if (callback) callback(buf, c);
+        if (callback) callback(buf, buflen, c, state);
         free(buf);
         return NULL;
         break;
@@ -655,7 +687,7 @@ char *editorPrompt(char *prompt, void (*callback)(char *, int)) {
       case '\r':
         if (buflen != 0) {
           editorSetStatusMessage("");
-          if (callback) callback(buf, c);
+          if (callback) callback(buf, buflen, c, state);
           return buf;
         }
         break;
@@ -678,7 +710,7 @@ char *editorPrompt(char *prompt, void (*callback)(char *, int)) {
         break;
     }
 
-    if (callback) callback(buf, c);
+    if (callback) callback(buf, buflen, c, state);
   }
 }
 
