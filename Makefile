@@ -16,7 +16,7 @@
 
 #Compiler Flags
 CC = gcc
-FLAGS = -Wall -g
+FLAGS = -Wall
 CFLAGS = -I/usr/local/include
 OFLAGS = -L/usr/local/lib -llua -lm -ldl
 
@@ -40,10 +40,10 @@ all: $(TARGET)
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) -I$(INCDIR)/$(patsubst $(SRCDIR)/%,%,$(dir $<)) -I$(INCDIR) -c -o $@ $<
+	$(CC) $(FLAGS) $(CFLAGS) -I$(INCDIR)/$(patsubst $(SRCDIR)/%,%,$(dir $<)) -I$(INCDIR) -c -o $@ $<
 
 $(TARGET): $(_OBJ)
-	$(CC) -o $@ $^ $(OFLAGS)
+	$(CC) -o $@ $^ $(OFLAGS) $(FLAGS)
 
 clean:
 	rm -rf $(OBJDIR)
