@@ -16,7 +16,9 @@
 
 #Compiler Flags
 CC = gcc
-CFLAGS = -Wall -g
+FLAGS = -Wall -g
+CFLAGS = -I/usr/local/include
+OFLAGS = -L/usr/local/lib -llua
 
 #Executable name
 TARGET = le
@@ -41,7 +43,7 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	$(CC) $(CFLAGS) -I$(INCDIR)/$(patsubst $(SRCDIR)/%,%,$(dir $<)) -I$(INCDIR) -c -o $@ $<
 
 $(TARGET): $(_OBJ)
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) $(OFLAGS) -o $@ $^
 
 clean:
 	rm -rf $(OBJDIR)

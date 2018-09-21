@@ -18,6 +18,10 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <lua.h>
+#include <lualib.h>
+#include <lauxlib.h>
+
 /*** defines ***/
 
 #define LE_VERSION "0.0.1"
@@ -65,6 +69,8 @@ struct editorConfig {
   struct termios orig_termios;
 };
 
+lua_State *L;
+
 struct editorConfig E;
 
 /*** prototypes ***/
@@ -79,6 +85,8 @@ char *editorPrompt(char *prompt, void (*callback)(char *, int));
 void die(const char *s) {
   write(STDOUT_FILENO, "\x1b[2J", 4);
   write(STDOUT_FILENO, "\x1b[H", 3);
+
+  lua_close(L);
 
   perror(s);
   exit(1);
@@ -788,6 +796,50 @@ void editorProcessKeypress() {
   quit_times = LE_QUIT_TIMES;
 }
 
+/*** lua ***/
+
+int extSetStatusMessage(lua_State *L) {
+  const char *message = luaL_checkstring(L, 1);
+
+  editorSetStatusMessage(message);
+
+  return 0;
+}
+
+// TODO consider making this non-global
+int luaInit() {
+  L = luaL_newstate(); // open Lua
+  if (!L) {
+    return -1; // Checks that Lua started up
+  }
+
+  luaL_openlibs(L); // load Lua libraries
+
+  lua_createtable(L, 0, 1);
+
+  lua_pushstring(L, "status");
+  lua_pushcfunction(L, extSetStatusMessage);
+  lua_settable(L, -3);
+
+  lua_setglobal(L, "le");
+
+  return 0;
+}
+
+int luaExecuteScript(const char *filename) {
+  int status = luaL_loadfile(L, filename);  // load Lua script
+  if (status != 0) {
+    fprintf(stderr, "Couldn't open file %s\n", filename); // tell us what mistake we made
+    return 0;
+  }
+  int ret = lua_pcall(L, 0, 0, 0); // tell Lua to run the script
+  if (ret != 0) {
+    fprintf(stderr, "%s\n", lua_tostring(L, -1)); // tell us what mistake we made
+    return 1;
+  }
+  return 0;
+}
+
 /*** init ***/
 
 void initEditor() {
@@ -815,6 +867,9 @@ int main(int argc, char *argv[]) {
   }
 
   editorSetStatusMessage("HELP: Ctrl-S = save | Ctrl-Q = quit | Ctrl-F = find");
+
+  luaInit();
+  luaExecuteScript("init.lua");
 
   while (1) {
     editorRefreshScreen();
