@@ -436,6 +436,7 @@ void editorSave() {
 
 /*** find ***/
 
+// TODO find next searches after last character of previous match, not line
 void editorFindCallback(char *query, int key) {
   static int last_match = -1;
   static int direction = 1;
@@ -515,6 +516,7 @@ void abFree(struct abuf *ab) {
 
 /*** output ***/
 
+// FIXME why the hell is this in scroll and not movecursor?
 void editorScroll() {
   if (E.cy < E.numrows) {
     E.rx = editorRowCxToRx(&E.row[E.cy], E.cx);
@@ -561,13 +563,6 @@ void editorDrawRows(struct abuf *ab) {
   for (; y < E.screenrows; ++y) {
     abAppend(ab, "~\x1b[K\r\n", 6); // tilde clearline carriagereturn linefeed
   }
-
-  // // Footer
-  // char welcome[80];
-  // int welcomelen = snprintf(welcome, sizeof(welcome),
-  //   "\x1b[7mle %s\x1b[K\x1b[m", LE_VERSION);
-  // if (welcomelen > E.screencols) welcomelen = E.screencols;
-  // abAppend(ab, welcome, welcomelen);
 }
 
 void editorDrawStatusBar(struct abuf *ab) {
@@ -646,24 +641,40 @@ char *editorPrompt(char *prompt, void (*callback)(char *, int)) {
     editorRefreshScreen();
 
     int c = editorReadKey();
-    if (c == '\x1b') {
-      editorSetStatusMessage("");
-      if (callback) callback(buf, c);
-      free(buf);
-      return NULL;
-    } else if (c == '\r') {
-      if (buflen != 0) {
+    switch(c) {
+
+      case '\x1b':
+      case CTRL_KEY('q'):
         editorSetStatusMessage("");
         if (callback) callback(buf, c);
-        return buf;
-      }
-    } else if (!iscntrl(c) && c < 128) {
-      if (buflen == bufsize - 1) {
-        bufsize *= 2;
-        buf = realloc(buf, bufsize);
-      }
-      buf[buflen++] = c;
-      buf[buflen] = '\0';
+        free(buf);
+        return NULL;
+        break;
+
+      case '\r':
+        if (buflen != 0) {
+          editorSetStatusMessage("");
+          if (callback) callback(buf, c);
+          return buf;
+        }
+        break;
+
+      case BACKSPACE:
+        if (buflen != 0) {
+          buf[--buflen] = '\0';
+        }
+        break;
+
+      default:
+        if (!iscntrl(c) && c < 128) {
+          if (buflen == bufsize - 1) {
+            bufsize *= 2;
+            buf = realloc(buf, bufsize);
+          }
+          buf[buflen++] = c;
+          buf[buflen] = '\0';
+        }
+        break;
     }
 
     if (callback) callback(buf, c);
@@ -783,13 +794,19 @@ void editorProcessKeypress() {
       editorScroll();
       break;
 
-      case CTRL_KEY('l'):
-      case '\x1b':
-        break;
+    case CTRL_KEY('l'):
+    case '\x1b':
+      break;
+
+    case '\t':
+      goto insert;
 
     default:
-      editorInsertChar(c);
-      editorScroll();
+      if (!iscntrl(c) && c < 128) {
+      insert:
+        editorInsertChar(c);
+        editorScroll();
+      }
       break;
   }
 
