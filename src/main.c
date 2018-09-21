@@ -269,7 +269,7 @@ void editorOpen(char *filename) {
   E.filename = strdup(filename);
 
   FILE *fp = fopen(filename, "r");
-  if (!fp) die("fopen");
+  if (!fp) return;
   char *line = NULL;
   size_t linecap = 0;
   ssize_t linelen;
