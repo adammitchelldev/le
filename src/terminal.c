@@ -26,9 +26,11 @@ void die(const char *s) {
   write(STDOUT_FILENO, "\x1b[2J", 4);
   write(STDOUT_FILENO, "\x1b[H", 3);
 
-  lua_close(L);
+  // FIXME reliably cleanup lua state on crash
+  //lua_close(L);
 
   perror(s);
+  printf("\r"); // Auto \r not enabled until exit()
   exit(1);
 }
 
