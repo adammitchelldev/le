@@ -24,7 +24,7 @@ OFLAGS = -L/usr/local/lib -llua -lm -ldl
 TARGET = le
 
 #Object list (corresponds to source files)
-OBJECTS = main.o terminal.o
+OBJECTS = main.o terminal.o row.o operations.o file.o output.o buffer.o input.o events.o editor.o find.o
 
 SRCDIR = src
 INCDIR = inc

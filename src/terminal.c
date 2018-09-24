@@ -2,25 +2,16 @@
 #define _BSD_SOURCE
 #define _GNU_SOURCE
 
-#include <ctype.h>
 #include <errno.h>
-#include <fcntl.h>
-#include <limits.h>
-#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <sys/ioctl.h>
-#include <sys/types.h>
 #include <termios.h>
-#include <time.h>
 #include <unistd.h>
 
-#include <lua.h>
-#include <lualib.h>
-#include <lauxlib.h>
-
 #include <global.h>
+
+#include <editor.h>
 
 void die(const char *s) {
   write(STDOUT_FILENO, "\x1b[2J", 4);
