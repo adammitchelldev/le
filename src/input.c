@@ -29,6 +29,7 @@
 #include <input.h>
 #include <events.h>
 #include <editor.h>
+#include <find.h>
 
 char *editorPrompt(char *prompt, void (*callback)(char *, int, int, void *), void *state) {
   size_t bufsize = 128;
@@ -97,7 +98,7 @@ void editorMoveCursor(int key) {
         E.cx++;
       } else if (E.cy < E.numrows) {
         E.cy++;
-        E.cx = 0;
+        E.rx = 0;
       }
       break;
     case ARROW_UP:
@@ -112,7 +113,14 @@ void editorMoveCursor(int key) {
       break;
   }
 
+  if(E.cy < E.numrows) {
+    row = &E.row[E.cy];
+    E.cx = editorRowRxToCx(row, E.rx);
+  }
+
+  // TODO don't repeat this in the case that vertical is jumped to
   row = (E.cy >= E.numrows) ? NULL : &E.row[E.cy];
+
   int rowlen = row ? row->size : 0;
   if (E.cx > rowlen) {
     E.cx = rowlen;
