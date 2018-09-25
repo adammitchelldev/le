@@ -31,7 +31,7 @@
 #include <editor.h>
 #include <find.h>
 
-char *editorPrompt(char *prompt, void (*callback)(char *, int, int, void *), void *state) {
+char *editorPrompt(const char *prompt, void (*callback)(char *, int, int, void *), void *state) {
   size_t bufsize = 128;
   char *buf = malloc(bufsize);
   size_t buflen = 0;

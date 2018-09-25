@@ -5,6 +5,7 @@
 #define _GNU_SOURCE
 
 #include <output.h>
+#include <input.h>
 #include <events.h>
 
 #include <stdio.h>
@@ -40,6 +41,40 @@ int extSetStatusMessage(lua_State *L) {
   return 0;
 }
 
+static void promptCallback(char *buf, int buflen, int key, void *state) {
+  lua_State *L = (lua_State *) state;
+
+  lua_pushvalue(L, 2); // push the callback function
+  lua_pushlstring(L, buf, buflen); // the current string
+  lua_pushinteger(L, key); // the last keycode
+
+  int n = lua_gettop(L);
+  int i;
+  for(i = 3; i <= n; i++) {
+    lua_pushvalue(L, i); // any additional user args passed to prompt()
+  }
+
+  lua_call(L, n, 0); // n + 2 - 2
+}
+
+int extPrompt(lua_State *L) {
+  const char *prompt = luaL_checkstring(L, 1);
+  char *result;
+
+  if(lua_isfunction(L, 2)) {
+    result = editorPrompt(prompt, promptCallback, L);
+  } else {
+    result = editorPrompt(prompt, NULL, L);
+  }
+
+  if(result) {
+    lua_pushstring(L, result);
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
 // TODO consider making this non-global
 int luaInit() {
   L = luaL_newstate(); // open Lua
@@ -53,6 +88,10 @@ int luaInit() {
 
   lua_pushstring(L, "status");
   lua_pushcfunction(L, extSetStatusMessage);
+  lua_settable(L, -3);
+
+  lua_pushstring(L, "prompt");
+  lua_pushcfunction(L, extPrompt);
   lua_settable(L, -3);
 
   lua_setglobal(L, "le");
