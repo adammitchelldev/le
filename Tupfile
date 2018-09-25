@@ -1,0 +1,2 @@
+: foreach src/*.c |> gcc -Iinc -Wall -c %f -o %o |> obj/%B.o
+: obj/*.o |> gcc %f -o %o -llua -lm -ldl |> le
