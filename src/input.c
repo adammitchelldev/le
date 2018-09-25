@@ -104,18 +104,21 @@ void editorMoveCursor(int key) {
     case ARROW_UP:
       if (E.cy != 0) {
         E.cy--;
+        if(E.cy < E.numrows) {
+          row = &E.row[E.cy];
+          E.cx = editorRowRxToCx(row, E.rx);
+        }
       }
       break;
     case ARROW_DOWN:
       if (E.cy < E.numrows) {
         E.cy++;
+        if(E.cy < E.numrows) {
+          row = &E.row[E.cy];
+          E.cx = editorRowRxToCx(row, E.rx);
+        }
       }
       break;
-  }
-
-  if(E.cy < E.numrows) {
-    row = &E.row[E.cy];
-    E.cx = editorRowRxToCx(row, E.rx);
   }
 
   // TODO don't repeat this in the case that vertical is jumped to
