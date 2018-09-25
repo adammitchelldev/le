@@ -1,6 +1,8 @@
+require("lua/find")
+
 le.status("Hello from lua")
 
-function key(code)
+function old_key(code)
   le.status("Code: " .. code)
   if code == 25 then
     local lastString = ""

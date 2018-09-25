@@ -114,3 +114,17 @@ void editorFind() {
     E.rowoff = saved_rowoff;
   }
 }
+
+struct epos editorFindString(const char *query) {
+  struct epos p = {0,0};
+  int current;
+  for (current = 0; current < E.numrows; current++) {
+    erow *row = &E.row[current];
+    char *match = strstr(row->render, query);
+    if (match) {
+      p.y = current;
+      p.x = editorRowRxToCx(row, match - row->render);
+      return p;
+    }
+  }
+}
