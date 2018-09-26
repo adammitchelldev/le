@@ -127,4 +127,5 @@ struct epos editorFindString(const char *query) {
       return p;
     }
   }
+  return p;
 }
