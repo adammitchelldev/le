@@ -9,9 +9,9 @@
 #include <termios.h>
 #include <unistd.h>
 
-#include <global.h>
+#include "global.h"
 
-#include <editor.h>
+#include "editor.h"
 
 void die(const char *s) {
   write(STDOUT_FILENO, "\x1b[2J", 4);

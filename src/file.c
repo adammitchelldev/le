@@ -4,12 +4,12 @@
 #define _BSD_SOURCE
 #define _GNU_SOURCE
 
-#include <row.h>
-#include <operations.h>
-#include <file.h>
-#include <output.h>
-#include <input.h>
-#include <editor.h>
+#include "row.h"
+#include "operations.h"
+#include "file.h"
+#include "output.h"
+#include "input.h"
+#include "editor.h"
 
 #include <errno.h>
 #include <fcntl.h>

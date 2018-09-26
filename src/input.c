@@ -18,18 +18,18 @@
 #include <lualib.h>
 #include <lauxlib.h>
 
-#include <global.h>
+#include "global.h"
 
-#include <terminal.h>
-#include <row.h>
-#include <operations.h>
-#include <file.h>
-#include <buffer.h>
-#include <output.h>
-#include <input.h>
-#include <events.h>
-#include <editor.h>
-#include <find.h>
+#include "terminal.h"
+#include "row.h"
+#include "operations.h"
+#include "file.h"
+#include "buffer.h"
+#include "output.h"
+#include "input.h"
+#include "events.h"
+#include "editor.h"
+#include "find.h"
 
 char *editorPrompt(const char *prompt, void (*callback)(char *, int, int, void *), void *state) {
   size_t bufsize = 128;

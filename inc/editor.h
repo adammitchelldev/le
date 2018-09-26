@@ -1,8 +1,10 @@
-#ifndef __LE_EDITOR__
+#ifndef __LE_EDITOR_H__
+#define __LE_EDITOR_H__
 
 #include <time.h>
-#include <row.h>
-#include <termios.h> // TODO editor config should not be concerned with terminal stuff
+
+#include "row.h"
+#include "termios.h" // TODO editor config should not be concerned with terminal stuff
 
 struct editorConfig {
   int cx, cy;
@@ -24,5 +26,4 @@ struct editorConfig E;
 
 void initEditor();
 
-#define __LE_EDITOR__
 #endif

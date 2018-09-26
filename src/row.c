@@ -4,11 +4,11 @@
 #define _BSD_SOURCE
 #define _GNU_SOURCE
 
-#include <terminal.h>
-#include <row.h>
-#include <editor.h>
+#include "terminal.h"
+#include "row.h"
+#include "editor.h"
 
-#include <global.h>
+#include "global.h"
 
 #include <stdlib.h>
 #include <string.h>

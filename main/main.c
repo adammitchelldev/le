@@ -4,12 +4,12 @@
 #define _BSD_SOURCE
 #define _GNU_SOURCE
 
-#include <terminal.h>
-#include <file.h>
-#include <output.h>
-#include <input.h>
-#include <events.h>
-#include <editor.h>
+#include "terminal.h"
+#include "file.h"
+#include "output.h"
+#include "input.h"
+#include "events.h"
+#include "editor.h"
 
 int main(int argc, char *argv[]) {
   enableRawMode();

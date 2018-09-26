@@ -1,4 +1,5 @@
-#ifndef __ROW__
+#ifndef __LE_ROW_H__
+#define __LE_ROW_H__
 
 #include <stdlib.h>
 
@@ -27,6 +28,4 @@ void editorRowAppendString(erow *row, char *s, size_t len);
 
 void editorRowDelChar(erow *row, int at);
 
-
-#define __ROW__
 #endif

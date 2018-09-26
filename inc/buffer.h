@@ -1,4 +1,5 @@
-#ifndef __BUFFER__
+#ifndef __LE_BUFFER_H__
+#define __LE_BUFFER_H__
 
 #include <stdlib.h>
 
@@ -13,5 +14,4 @@ void abAppend(struct abuf *ab, const char *s, int len);
 
 void abFree(struct abuf *ab);
 
-#define __BUFFER__
 #endif

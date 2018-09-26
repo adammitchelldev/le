@@ -1,2 +1,2 @@
-: foreach src/*.c $(CONFIG_SRC) |> gcc -Iinc -Wall -c %f -o %o |> obj/%B.o
+: foreach src/*.c $(CONFIG_SRC) |> gcc -iquoteinc -Wall -c %f -o %o |> obj/%B.o
 : obj/*.o |> gcc %f -o %o -llua -lm -ldl |> le

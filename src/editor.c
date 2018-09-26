@@ -4,8 +4,8 @@
 #define _BSD_SOURCE
 #define _GNU_SOURCE
 
-#include <terminal.h>
-#include <editor.h>
+#include "terminal.h"
+#include "editor.h"
 
 void initEditor() {
   E.cx = 0;

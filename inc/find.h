@@ -1,4 +1,5 @@
-#ifndef __LE_FIND__
+#ifndef __LE_FIND_H__
+#define __LE_FIND_H__
 
 struct epos {
   int x;
@@ -17,5 +18,4 @@ void editorFind();
 
 struct epos editorFindString(const char *query);
 
-#define __LE_FIND__
 #endif

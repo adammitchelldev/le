@@ -1,6 +1,7 @@
-#ifndef __GLOBAL__
+#ifndef __LE_GLOBAL_H__
+#define __LE_GLOBAL_H__
 
-#include <row.h>
+#include "row.h"
 
 #define LE_VERSION "0.0.1"
 #define LE_TAB_STOP 2
@@ -21,5 +22,4 @@ enum editorKey {
   PAGE_DOWN
 };
 
-#define __GLOBAL__
 #endif

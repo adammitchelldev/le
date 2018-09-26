@@ -1,8 +1,9 @@
-#ifndef __LE_FILE__
+#ifndef __LE_FILE_H__
+#define __LE_FILE_H__
 
-#include <global.h>
+#include "global.h"
 
-#include <row.h>
+#include "row.h"
 
 char *editorRowsToString(int *buflen);
 
@@ -10,5 +11,4 @@ void editorOpen(char *filename);
 
 void editorSave();
 
-#define __LE_FILE__
 #endif

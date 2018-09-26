@@ -1,4 +1,4 @@
-#include <buffer.h>
+#include "buffer.h"
 #include "CuTest.h"
 
 void TestNewBuffer(CuTest* tc)

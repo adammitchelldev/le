@@ -1,4 +1,5 @@
-#ifndef __LE_EVENTS__
+#ifndef __LE_EVENTS_H__
+#define __LE_EVENTS_H__
 
 #include <lua.h>
 
@@ -12,5 +13,4 @@ int luaInit();
 
 int luaExecuteScript(const char *filename);
 
-#define __LE_EVENTS__
 #endif

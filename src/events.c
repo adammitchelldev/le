@@ -4,11 +4,11 @@
 #define _BSD_SOURCE
 #define _GNU_SOURCE
 
-#include <editor.h>
-#include <output.h>
-#include <input.h>
-#include <events.h>
-#include <find.h>
+#include "editor.h"
+#include "output.h"
+#include "input.h"
+#include "events.h"
+#include "find.h"
 
 #include <stdio.h>
 

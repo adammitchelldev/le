@@ -1,4 +1,5 @@
-#ifndef __TERMINAL__
+#ifndef __LE_TERMINAL_H__
+#define __LE_TERMINAL_H__
 
 void die(const char *s);
 
@@ -12,5 +13,4 @@ int getCursorPosition(int *rows, int *cols);
 
 int getWindowSize(int *rows, int *cols);
 
-#define __TERMINAL__
 #endif

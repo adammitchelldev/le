@@ -1,6 +1,7 @@
-#ifndef __OUTPUT__
+#ifndef __LE_OUTPUT_H__
+#define __LE_OUTPUT_H__
 
-#include <buffer.h>
+#include "buffer.h"
 
 void editorScroll();
 
@@ -14,5 +15,4 @@ void editorRefreshScreen();
 
 void editorSetStatusMessage(const char *fmt, ...);
 
-#define __OUTPUT__
 #endif

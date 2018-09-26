@@ -4,15 +4,15 @@
 #define _BSD_SOURCE
 #define _GNU_SOURCE
 
-#include <find.h>
-#include <editor.h>
-#include <output.h>
-#include <input.h>
+#include "find.h"
+#include "editor.h"
+#include "output.h"
+#include "input.h"
 
 #include <stdlib.h>
 #include <string.h>
 
-#include <global.h>
+#include "global.h"
 
 // FIXME search backwards still searches forwards on the line
 // TODO remember first result for each char in the buffer, proper incremental

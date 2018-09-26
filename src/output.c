@@ -10,12 +10,12 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <terminal.h>
-#include <row.h>
-#include <operations.h>
-#include <file.h>
-#include <output.h>
-#include <editor.h>
+#include "terminal.h"
+#include "row.h"
+#include "operations.h"
+#include "file.h"
+#include "output.h"
+#include "editor.h"
 
 // FIXME why the hell is this in scroll and not movecursor?
 void editorScroll() {

@@ -4,9 +4,9 @@
 #define _BSD_SOURCE
 #define _GNU_SOURCE
 
-#include <terminal.h>
-#include <row.h>
-#include <editor.h>
+#include "terminal.h"
+#include "row.h"
+#include "editor.h"
 
 void editorInsertChar(int c) {
   if (E.cy == E.numrows) {
