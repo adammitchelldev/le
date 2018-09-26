@@ -1,0 +1,18 @@
+language: c
+
+addons:
+  apt:
+    sources:
+      - sourceline: 'deb http://ppa.launchpad.net/anatol/tup/ubuntu precise main'
+    packages:
+      - '--allow-unauthenticated tup'
+
+before_install:
+  - curl -R -O http://www.lua.org/ftp/lua-5.3.5.tar.gz
+  - tar zxf lua-5.3.5.tar.gz
+  - cd lua-5.3.5
+  - make linux test
+  - sudo make install
+  - cd ..
+
+script: ./test.sh

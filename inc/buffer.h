@@ -1,5 +1,7 @@
 #ifndef __BUFFER__
 
+#include <stdlib.h>
+
 struct abuf {
   char *b;
   int len;
